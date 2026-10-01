@@ -331,6 +331,11 @@ html:not([data-glass="off"]) .qrcard,html:not([data-glass="off"]) .bill{backgrou
 
 @media (prefers-reduced-transparency:reduce){ body::before,body::after{display:none} }
 
+
+html:not([data-theme="dark"]) input,html:not([data-theme="dark"]) select,html:not([data-theme="dark"]) textarea,html:not([data-theme="dark"]) .search input{border:1.5px solid rgba(11,61,46,.35)!important;background:rgba(255,255,255,.85)!important}
+html:not([data-theme="dark"]) input:focus,html:not([data-theme="dark"]) select:focus,html:not([data-theme="dark"]) textarea:focus{border-color:#0b3d2e!important;box-shadow:0 0 0 3px rgba(11,61,46,.15)!important;outline:none}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{border:1.5px solid rgba(255,255,255,.28)!important}
+[data-theme="dark"] input:focus,[data-theme="dark"] select:focus,[data-theme="dark"] textarea:focus{border-color:#e0b23c!important;outline:none}
 </style>
 
 <style>

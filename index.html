@@ -489,7 +489,7 @@ var STR={ml:{
 function lang(){ try{var p=localStorage.getItem('kk_lang'); if(p)return p;}catch(e){} return (state.settings&&state.settings.Language)||'en'; }
 function t(s){ var L=lang(); if(L==='en')return s; return (STR[L]||{})[s]||s; }
 function itemName(m){ if(!m)return ''; if(lang()!=='ml')return m.ItemName||''; return m.ItemNameMl||mlAuto(m.ItemName||''); }
-function catName(cat){ if(lang()!=='ml')return cat; var m=(state.settings&&state.settings.CategoryMl)||{}; return m[cat]||mlAuto(cat); }
+function catName(cat){ if(lang()!=='ml')return cat; var m=(state.settings&&state.settings.CategoryMl)||{}; if(m[cat])return m[cat]; var all=(typeof live!=='undefined'&&live.menuAll)||state.menu||[]; for(var i=0;i<all.length;i++){ if(all[i].Category===cat&&all[i].CategoryMl)return all[i].CategoryMl; } return mlAuto(cat); }
 function toggleLang(){ var n=lang()==='ml'?'en':'ml'; try{localStorage.setItem('kk_lang',n);}catch(e){} document.documentElement.setAttribute('lang',n); var b=document.getElementById('langBtn'); if(b)b.textContent=n==='ml'?'EN':'\u0d2e\u0d32'; renderPage(); }
 function newRef(){return Date.now().toString(36)+'-'+Math.random().toString(36).substring(2,10);}
 function loading(on){var b=$('#loadingBar'); if(b)b.classList.toggle('on',!!on);}

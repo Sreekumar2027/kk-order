@@ -389,6 +389,11 @@ html:not([data-glass="off"]) .mcard{background:var(--glass);border:1px solid var
 .mfoot{flex-wrap:wrap}
 @container (max-width:240px){ .mprice small{display:none} .mfoot .stepper button{width:34px;height:34px} }
 .mimg img.fitted{position:absolute;left:50%;top:50%;max-width:none;max-height:none;object-fit:unset;transform-origin:center center;z-index:1}
+
+.cartbar{z-index:40}
+.mimg{isolation:isolate}
+.mcard{position:relative;z-index:0}
+.wrap{max-width:960px}
 </style>
 
 <style>
@@ -403,6 +408,9 @@ body{background:var(--bg)}
 .cartbar .in{max-width:640px;margin:0 auto}
 .spacer{height:110px}
 .item-row .nm{font-size:16px}
+
+.wrap{max-width:1000px}
+.mgrid{grid-template-columns:repeat(auto-fill,minmax(calc(165px*var(--fs,1)),1fr))}
 </style>
 </head>
 <body>

@@ -419,6 +419,12 @@ body{background:var(--bg)}
 
 /* the category rail: sticks while you scroll, but scrolls by itself when there are more categories than fit on the screen */
 @media (min-width:641px){ .mrail{max-height:calc(100vh - var(--topbar-h,56px) - 170px);overflow-y:auto;overscroll-behavior:contain;padding:2px 4px 2px 0;scrollbar-width:thin} }
+
+.stepper.kg .kgq{width:calc(72px*var(--fs,1));height:calc(40px*var(--fs,1));text-align:center;font-weight:800;font-size:calc(16px*var(--fs,1));border:1.5px solid rgba(11,61,46,.35);border-radius:10px;padding:0 4px}
+.stepper.kg .unit{font-weight:700;color:var(--muted);font-size:calc(13px*var(--fs,1))}
+.mfoot .stepper.kg .kgq{width:calc(62px*var(--fs,1));height:calc(34px*var(--fs,1))}
+
+.perkg{font-size:.72em;font-weight:700;color:var(--muted);margin-left:1px}
 </style>
 </head>
 <body>
@@ -660,7 +666,7 @@ function renderPage(){
 }
 function toggleSeat(n){ var i=state.seats.indexOf(n); if(i>=0)state.seats.splice(i,1); else state.seats.push(n); state.seats.sort(function(a,b){return a-b;}); [].forEach.call(document.querySelectorAll('.seat-chip'),function(b,idx){b.classList.toggle('on',state.seats.indexOf(idx+1)>=0);}); updateBar(); }
 function itemRow(m){ var q=state.cart[m.MenuID]?state.cart[m.MenuID].Quantity:0;
-  return '<div class="item-row"><div class="nm">'+esc(itemName(m))+'<small>'+(m.Description?esc(m.Description)+' &middot; ':'')+money(m.Price)+'</small></div><div class="stepper"><button onclick="cartStep(\''+m.MenuID+'\',-1)">&minus;</button><span class="q" id="q_'+m.MenuID+'">'+q+'</span><button onclick="cartStep(\''+m.MenuID+'\',1)">+</button></div></div>'; }
+  return '<div class="item-row"><div class="nm">'+esc(itemName(m))+'<small>'+(m.Description?esc(m.Description)+' &middot; ':'')+priceLabel(m)+'</small></div>'+stepperHtml(m,q)+'</div>'; }
 
 /* ===================== menu card view ===================== */
 var MENU_COLORS=['#0b3d2e','#b3202e','#1f6f8b','#8a5a1f','#5b2a86','#1f8a4c','#a04a00','#2b5b6b','#7a1f3d','#3d5a1f'];
@@ -705,15 +711,15 @@ function menuImgHtml(m,q){
   var c=catColor(m.Category), tile='<div class="tile" style="background:linear-gradient(135deg,'+c+',rgba(0,0,0,.35)),'+c+'">'+catIcon(m.Category,m.ItemName)+'<b>'+esc(itemName(m))+'</b></div>';
   var url=String(m.ImageUrl||'').trim();
   /* the drawn tile sits underneath; the photo covers it when it loads and is removed if the link fails */
-  return '<div class="mimg">'+tile+(url?'<img loading="lazy" src="'+esc(url)+'" alt="" referrerpolicy="no-referrer" style="position:relative;z-index:1" data-fit="'+esc(m.ImageFit||'')+'" onload="if(this.dataset.fit)fitImage(this)" onerror="imgFallback(this)">':'')+(q?'<span class="qb">'+q+'</span>':'')+'</div>';
+  return '<div class="mimg">'+tile+(url?'<img loading="lazy" src="'+esc(url)+'" alt="" referrerpolicy="no-referrer" style="position:relative;z-index:1" data-fit="'+esc(m.ImageFit||'')+'" onload="if(this.dataset.fit)fitImage(this)" onerror="imgFallback(this)">':'')+(q?'<span class="qb">'+(isKg(m)?q+' kg':q)+'</span>':'')+'</div>';
 }
 function menuCardHtml(m){
   var q=state.cart[m.MenuID]?state.cart[m.MenuID].Quantity:0;
   var mins=m.ServingTime?(' &middot; '+m.ServingTime+' '+t('min')):'';
   return '<div class="mcard'+(q?' inc':'')+'" id="mc_'+esc(m.MenuID)+'">'+menuImgHtml(m,q)
     +'<div class="mbody"><div class="mname">'+esc(itemName(m))+'</div>'+(m.Description?'<div class="mdesc">'+esc(m.Description)+'</div>':'')
-    +'<div class="mfoot"><span class="mprice">'+money(m.Price)+'<small class="muted" style="font-weight:600">'+mins+'</small></span>'
-    +'<div class="stepper"><button type="button" onclick="cartStep(\''+m.MenuID+'\',-1)">&minus;</button><span class="q" id="q_'+m.MenuID+'">'+q+'</span><button type="button" onclick="cartStep(\''+m.MenuID+'\',1)">+</button></div></div></div></div>';
+    +'<div class="mfoot"><span class="mprice">'+priceLabel(m)+'<small class="muted" style="font-weight:600">'+mins+'</small></span>'
+    +stepperHtml(m,q)+'</div></div></div>';
 }
 function menuViewSwitch(){
   var v=menuView();
@@ -725,7 +731,7 @@ function renderMenuCards(wrap,hits){
   var byCat={}, cats=[]; state.menu.forEach(function(m){ if(!byCat[m.Category]){byCat[m.Category]=[];cats.push(m.Category);} byCat[m.Category].push(m); });
   if(state.mcat&&!byCat[state.mcat])state.mcat='';
   var rail='<div class="mrail"><button type="button" class="mcat'+(state.mcat?'':' on')+'" style="background:#1e2a25" onclick="state.mcat=\'\';'+(typeof renderOrderMenu==='function'?'renderOrderMenu()':'renderMenu()')+'"><span>'+t('All')+'<small>'+state.menu.length+' '+t('items')+'</small></span></button>';
-  cats.forEach(function(cat){ var n=byCat[cat].reduce(function(s,m){return s+(state.cart[m.MenuID]?state.cart[m.MenuID].Quantity:0);},0);
+  cats.forEach(function(cat){ var n=byCat[cat].reduce(function(s,m){return s+(state.cart[m.MenuID]?(isKg(m)?1:state.cart[m.MenuID].Quantity):0);},0);
     rail+='<button type="button" class="mcat'+(state.mcat===cat?' on':'')+'" style="background:'+catColor(cat)+'" data-cat="'+esc(cat)+'" onclick="state.mcat=this.dataset.cat;'+(typeof renderOrderMenu==='function'?'renderOrderMenu()':'renderMenu()')+'"><span>'+esc(catName(cat))+'<small>'+byCat[cat].length+' '+t('items')+'</small></span>'+(n?'<span class="cnt">'+n+'</span>':'')+'</button>'; });
   rail+='</div>';
   var grid='<div class="mgrid">';
@@ -738,11 +744,12 @@ function renderMenuCards(wrap,hits){
 function cardsAfterStep(menuId){
   var m=state.menu.filter(function(x){return x.MenuID===menuId;})[0]; if(!m)return;
   var q=state.cart[menuId]?state.cart[menuId].Quantity:0, card=document.getElementById('mc_'+menuId);
-  if(card){ card.classList.toggle('inc',q>0); var img=card.querySelector('.mimg'); var b=img&&img.querySelector('.qb'); if(q){ if(!b){b=document.createElement('span');b.className='qb';img.appendChild(b);} b.textContent=q; } else if(b)b.remove(); }
-  var btn=document.querySelector('.mcat[data-cat="'+String(m.Category).replace(/"/g,'\\"')+'"]'); if(btn){ var n=0; state.menu.forEach(function(x){ if(x.Category===m.Category&&state.cart[x.MenuID])n+=state.cart[x.MenuID].Quantity; }); var c=btn.querySelector('.cnt'); if(n){ if(!c){c=document.createElement('span');c.className='cnt';btn.appendChild(c);} c.textContent=n; } else if(c)c.remove(); }
+  if(card){ card.classList.toggle('inc',q>0); var img=card.querySelector('.mimg'); var b=img&&img.querySelector('.qb'); if(q){ if(!b){b=document.createElement('span');b.className='qb';img.appendChild(b);} b.textContent=isKg(m)?q+' kg':q; } else if(b)b.remove(); }
+  var btn=document.querySelector('.mcat[data-cat="'+String(m.Category).replace(/"/g,'\\"')+'"]'); if(btn){ var n=0; state.menu.forEach(function(x){ if(x.Category===m.Category&&state.cart[x.MenuID])n+=(isKg(x)?1:state.cart[x.MenuID].Quantity); }); var c=btn.querySelector('.cnt'); if(n){ if(!c){c=document.createElement('span');c.className='cnt';btn.appendChild(c);} c.textContent=n; } else if(c)c.remove(); }
 }
 
 function renderMenu(){
+  if(document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('kgq')){ state._menuDirty=true; return; }   /* never wipe a weight someone is typing */
   var wrap=$('#oMenu'); if(!wrap)return; if(!state.menu.length){wrap.innerHTML='<p class="muted">'+t('The menu is not available right now.')+'</p>';return;}
   var q=state.menuQuery;
   if(q){ var words=q.split(' '); var hits=state.menu.filter(function(m){var hay=norm(m.ItemName+' '+m.Category+' '+(m.ItemNameMl||'')); return words.every(function(w){return hay.indexOf(w)>=0;});});
@@ -750,13 +757,28 @@ function renderMenu(){
     wrap.innerHTML=menuViewSwitch()+(hits.length?hits.map(itemRow).join(''):'<p class="muted">-</p>'); return; }
   if(menuView()==='cards'){ renderMenuCards(wrap,null); return; }
   var byCat={}; state.menu.forEach(function(m){(byCat[m.Category]=byCat[m.Category]||[]).push(m);});
-  wrap.innerHTML=menuViewSwitch()+Object.keys(byCat).map(function(cat){ var open=state.openCats.hasOwnProperty(cat)?state.openCats[cat]:true; var n=byCat[cat].reduce(function(s,m){return s+(state.cart[m.MenuID]?state.cart[m.MenuID].Quantity:0);},0);
+  wrap.innerHTML=menuViewSwitch()+Object.keys(byCat).map(function(cat){ var open=state.openCats.hasOwnProperty(cat)?state.openCats[cat]:true; var n=byCat[cat].reduce(function(s,m){return s+(state.cart[m.MenuID]?(isKg(m)?1:state.cart[m.MenuID].Quantity):0);},0);
     return '<button type="button" class="cat-head'+(open?' open':'')+'" onclick="state.openCats[\''+esc(cat).replace(/'/g,"\\'")+'\']=!'+open+';renderMenu()"><span class="chev">&#9656;</span><span class="cat-name">'+esc(catName(cat))+'</span><span class="muted">'+byCat[cat].length+' '+t('items')+(n?' &middot; <b>'+n+' '+t('chosen')+'</b>':'')+'</span></button><div class="cat-body'+(open?'':' hidden')+'">'+byCat[cat].map(itemRow).join('')+'</div>'; }).join('');
 }
-function cartStep(id,d){ var m=state.menu.filter(function(x){return x.MenuID===id;})[0]; if(!m)return; var line=state.cart[id]||{MenuID:id,ItemName:m.ItemName,UnitPrice:m.Price,Quantity:0}; line.Quantity+=d; if(line.Quantity<=0)delete state.cart[id]; else state.cart[id]=line; var q=$('#q_'+id); if(q)q.textContent=state.cart[id]?state.cart[id].Quantity:0; updateBar(); if(menuView()==='cards'){cardsAfterStep(id);return;} if(!state.menuQuery)renderMenu(); }
-function updateBar(){ var n=0,sub=0; Object.keys(state.cart).forEach(function(k){n+=state.cart[k].Quantity; sub+=state.cart[k].Quantity*state.cart[k].UnitPrice;}); $('#oCount').textContent=n?(n+' '+t(n>1?'items':'item')):t('No items yet'); $('#oSub').textContent=money(sub); var b=$('#oSend'); b.disabled=!(n&&state.seats.length)||state.sending; b.textContent=state.sending?t('Sending...'):(!state.seats.length&&n?t('Choose your chair first'):t('Send to waiter')); }
+
+/* ---------- items sold by weight (Unit = 'kg'): price is per kg, Quantity is the weight ---------- */
+function isKg(m){ return !!m&&String(m.Unit||'').toLowerCase()==='kg'; }
+function qtyLabel(it){ var q=Number(it.Quantity)||0; return isKg(it)?(q+' kg'):(q+'\u00d7'); }
+function fmtQty(m,q){ q=Number(q)||0; return isKg(m)?(Math.round(q*100)/100):q; }
+function stepperHtml(m,q){
+  var id=String(m.MenuID).replace(/'/g,"\\'");
+  if(isKg(m)) return '<div class="stepper kg"><button type="button" onclick="cartStep(\''+id+'\',-1)">&minus;</button><input class="q kgq" id="q_'+esc(m.MenuID)+'" type="number" inputmode="decimal" step="0.05" min="0" value="'+(q||'')+'" placeholder="0" onchange="cartSet(\''+id+'\',this.value)" onblur="kgBlur()" onclick="this.select()"><span class="unit">kg</span><button type="button" onclick="cartStep(\''+id+'\',1)">+</button></div>';
+  return '<div class="stepper"><button type="button" onclick="cartStep(\''+id+'\',-1)">&minus;</button><span class="q" id="q_'+esc(m.MenuID)+'">'+q+'</span><button type="button" onclick="cartStep(\''+id+'\',1)">+</button></div>';
+}
+function priceLabel(m){ return money(m.Price)+(isKg(m)?'<span class="perkg">/kg</span>':''); }
+function kgBlur(){ setTimeout(function(){ if(state._menuDirty){ state._menuDirty=false; if(typeof renderOrderMenu==='function')renderOrderMenu(); else renderMenu(); } },50); }
+function setQtyEl(id,v){ var q=document.getElementById('q_'+id); if(!q)return; if(q.tagName==='INPUT')q.value=v||''; else q.textContent=v; }
+
+function cartSet(id,val){ var m=state.menu.filter(function(x){return x.MenuID===id;})[0]; if(!m)return; var v=Math.max(0,Math.round((Number(String(val).replace(',','.'))||0)*100)/100); cartStep(id,v,true); }
+function cartStep(id,d,exact){ var m=state.menu.filter(function(x){return x.MenuID===id;})[0]; if(!m)return; var line=state.cart[id]||{MenuID:id,ItemName:m.ItemName,UnitPrice:m.Price,Quantity:0,Unit:m.Unit||''}; if(exact){ line.Quantity=fmtQty(m,d); } else { if(isKg(m))d=d*0.25; line.Quantity=fmtQty(m,line.Quantity+d); } if(line.Quantity<=0)delete state.cart[id]; else state.cart[id]=line; setQtyEl(id,state.cart[id]?state.cart[id].Quantity:0); updateBar(); if(menuView()==='cards'){cardsAfterStep(id);return;} if(!state.menuQuery)renderMenu(); }
+function updateBar(){ var n=0,sub=0; Object.keys(state.cart).forEach(function(k){n+=(isKg(state.cart[k])?1:state.cart[k].Quantity); sub+=Math.round(state.cart[k].Quantity*state.cart[k].UnitPrice*100)/100;}); $('#oCount').textContent=n?(n+' '+t(n>1?'items':'item')):t('No items yet'); $('#oSub').textContent=money(sub); var b=$('#oSend'); b.disabled=!(n&&state.seats.length)||state.sending; b.textContent=state.sending?t('Sending...'):(!state.seats.length&&n?t('Choose your chair first'):t('Send to waiter')); }
 function sendRequest(){
-  if(state.sending)return; var items=Object.keys(state.cart).map(function(k){var l=state.cart[k]; return {MenuID:l.MenuID,ItemName:l.ItemName,Quantity:l.Quantity,UnitPrice:l.UnitPrice,Amount:l.Quantity*l.UnitPrice};});
+  if(state.sending)return; var items=Object.keys(state.cart).map(function(k){var l=state.cart[k]; return {MenuID:l.MenuID,ItemName:l.ItemName,Quantity:l.Quantity,UnitPrice:l.UnitPrice,Amount:Math.round(l.Quantity*l.UnitPrice*100)/100,Unit:l.Unit||''};});
   if(!items.length||!state.seats.length)return;
   if(!state.orderRef)state.orderRef=newRef(); state.sending=true; updateBar(); loading(true);
   var total=items.reduce(function(s,i){return s+i.Amount;},0);
@@ -782,7 +804,7 @@ function renderMine(){
     var label=st==='PENDING'?t('Waiting for a waiter to confirm'):st==='REJECTED'?t('Not accepted')+(r.RejectReason?': '+esc(r.RejectReason):''):st==='CANCELLED'?t('Cancelled'):o?(o.OrderStatus==='READY'?t('Ready - coming to your table'):o.OrderStatus==='SERVED'||o.OrderStatus==='BILLED'?t('Served'):o.OrderStatus==='PREPARING'?t('Being prepared in the kitchen'):t('Confirmed - sent to the kitchen')):t('Confirmed - sent to the kitchen');
     var cls=st==='REJECTED'||st==='CANCELLED'?'REJECTED':(o&&o.OrderStatus==='READY')?'READY':st;
     var items=(o?o.items:r.items).map(function(it){ var s=it.ItemStatus; var mm=(state.menu.filter(function(x){return x.MenuID===it.MenuID;})[0]); var nm=lang()!=='ml'?it.ItemName:((mm&&mm.ItemNameMl)||mlAuto(it.ItemName));
-      return '<li'+(s==='OUT'?' style="text-decoration:line-through;opacity:.6"':'')+'>'+it.Quantity+'&times; '+esc(nm)+(s==='OUT'?' <span class="badge no">'+t('sold out')+'</span>':s==='READY'?' <span class="badge READY">'+t('ready')+'</span>':s==='PREPARING'?' <span class="badge PREPARING">'+t('preparing')+'</span>':'')+'</li>'; }).join('');
+      return '<li'+(s==='OUT'?' style="text-decoration:line-through;opacity:.6"':'')+'>'+qtyLabel(it)+' '+esc(nm)+(s==='OUT'?' <span class="badge no">'+t('sold out')+'</span>':s==='READY'?' <span class="badge READY">'+t('ready')+'</span>':s==='PREPARING'?' <span class="badge PREPARING">'+t('preparing')+'</span>':'')+'</li>'; }).join('');
     var cancel=st==='PENDING'?'<button class="btn grey sm mt" onclick="cancelReq(\''+id+'\')">'+t('Cancel this order')+'</button>':'';
     return '<div class="list-item status '+cls+'"><div class="head"><b>'+label+'</b><span class="muted">'+ago(r.CreatedAt)+'</span></div><ul style="margin:6px 0;padding-left:18px">'+items+'</ul><div class="muted">'+t('Total')+' '+money(o?o.OrderTotal:r.Total)+(o?' &middot; '+esc(o.OrderID):'')+'</div>'+cancel+'</div>'; }).join('');
 }

@@ -411,6 +411,14 @@ body{background:var(--bg)}
 
 .wrap{max-width:1000px}
 .mgrid{grid-template-columns:repeat(auto-fill,minmax(calc(165px*var(--fs,1)),1fr))}
+
+@media (min-width:641px){
+  .mrail{max-height:calc(100vh - var(--topbar-h,56px) - 90px);overflow-y:auto;overscroll-behavior:contain;padding:2px 4px 2px 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+  .mrail .mcat{flex:0 0 auto}
+}
+
+/* the category rail: sticks while you scroll, but scrolls by itself when there are more categories than fit on the screen */
+@media (min-width:641px){ .mrail{max-height:calc(100vh - var(--topbar-h,56px) - 170px);overflow-y:auto;overscroll-behavior:contain;padding:2px 4px 2px 0;scrollbar-width:thin} }
 </style>
 </head>
 <body>

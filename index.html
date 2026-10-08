@@ -409,6 +409,13 @@ html:not([data-glass="off"]) .mcard{background:var(--glass);border:1px solid var
 .rvw-tot{display:flex;justify-content:space-between;font-weight:800;font-size:calc(19px*var(--fs,1));padding:12px 0 10px}
 .rvw-btns{display:flex;gap:10px}.rvw-btns .btn{flex:1}
 .rvw-empty{padding:20px 0;text-align:center;color:var(--muted)}
+.list-item.status.c-blue{background:linear-gradient(180deg,#e3ecfb,#cfdcf5)!important;border:1px solid #8fb0e8!important;border-left:6px solid #2850b5!important}
+.list-item.status.c-amber{background:linear-gradient(180deg,#fff3d6,#ffe9b8)!important;border:1px solid #e9c060!important;border-left:6px solid #d99a1e!important}
+.list-item.status.c-green{background:linear-gradient(180deg,#e6f6ea,#cfeeda)!important;border:1px solid #8fcfa4!important;border-left:6px solid #1f8a4c!important}
+.list-item.status.c-done{opacity:.8}
+[data-theme="dark"] .list-item.status.c-blue{background:linear-gradient(180deg,#14264a,#0f1d3a)!important;border-color:#2f55a0!important}
+[data-theme="dark"] .list-item.status.c-amber{background:linear-gradient(180deg,#4a3a12,#3a2d0c)!important;border-color:#8a6a1e!important}
+[data-theme="dark"] .list-item.status.c-green{background:linear-gradient(180deg,#143d26,#0f2e1d)!important;border-color:#2e7a4c!important}
 </style>
 
 <style>
@@ -921,11 +928,11 @@ function renderMine(){
   box.innerHTML=ids.map(function(id){ var r=reqData[id]; if(!r)return '';
     var st=r.Status, o=r.ApprovedAs?orderData[r.ApprovedAs]:null;
     var label=st==='PENDING'?t('Waiting for a waiter to confirm'):st==='REJECTED'?t('Not accepted')+(r.RejectReason?': '+esc(r.RejectReason):''):st==='CANCELLED'?t('Cancelled'):o?(o.OrderStatus==='READY'?t('Ready - coming to your table'):o.OrderStatus==='SERVED'||o.OrderStatus==='BILLED'?t('Served'):o.OrderStatus==='PREPARING'?t('Being prepared in the kitchen'):t('Confirmed - sent to the kitchen')):t('Confirmed - sent to the kitchen');
-    var cls=st==='REJECTED'||st==='CANCELLED'?'REJECTED':(o&&o.OrderStatus==='READY')?'READY':st;
+    var cls=st==='REJECTED'||st==='CANCELLED'?'REJECTED':(o&&o.OrderStatus==='READY')?'READY':st; var os=o?o.OrderStatus:''; var tone=st==='REJECTED'||st==='CANCELLED'?'':os==='READY'?' c-green':os==='PREPARING'?' c-amber':(os==='SERVED'||os==='BILLED')?' c-done':(o||st==='PENDING')?' c-blue':'';
     var items=(o?o.items:r.items).map(function(it){ var s=it.ItemStatus; var mm=(state.menu.filter(function(x){return x.MenuID===it.MenuID;})[0]); var nm=lang()!=='ml'?it.ItemName:((mm&&mm.ItemNameMl)||mlAuto(it.ItemName));
       return '<li'+(s==='OUT'?' style="text-decoration:line-through;opacity:.6"':'')+'>'+qtyLabel(it)+' '+esc(nm)+(s==='OUT'?' <span class="badge no">'+t('sold out')+'</span>':s==='READY'?' <span class="badge READY">'+t('ready')+'</span>':s==='PREPARING'?' <span class="badge PREPARING">'+t('preparing')+'</span>':'')+'</li>'; }).join('');
     var cancel=st==='PENDING'?'<button class="btn grey sm mt" onclick="cancelReq(\''+id+'\')">'+t('Cancel this order')+'</button>':'';
-    return '<div class="list-item status '+cls+'"><div class="head"><b>'+label+'</b><span class="muted">'+ago(r.CreatedAt)+'</span></div><ul style="margin:6px 0;padding-left:18px">'+items+'</ul><div class="muted">'+t('Total')+' '+money(o?o.OrderTotal:r.Total)+(o?' &middot; '+esc(o.OrderID):'')+'</div>'+cancel+'</div>'; }).join('');
+    return '<div class="list-item status '+cls+tone+'"><div class="head"><b>'+label+'</b><span class="muted">'+ago(r.CreatedAt)+'</span></div><ul style="margin:6px 0;padding-left:18px">'+items+'</ul><div class="muted">'+t('Total')+' '+money(o?o.OrderTotal:r.Total)+(o?' &middot; '+esc(o.OrderID):'')+'</div>'+cancel+'</div>'; }).join('');
 }
 function cancelReq(id){ db.collection('requests').doc(id).update({Status:'CANCELLED'}).then(function(){toast('info','Order cancelled.');}).catch(function(e){toast('error','Too late to cancel: a waiter is already handling it.');}); }
 </script>

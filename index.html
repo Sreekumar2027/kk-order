@@ -425,6 +425,13 @@ body{background:var(--bg)}
 .mfoot .stepper.kg .kgq{width:calc(62px*var(--fs,1));height:calc(34px*var(--fs,1))}
 
 .perkg{font-size:.72em;font-weight:700;color:var(--muted);margin-left:1px}
+
+@media (max-width:640px){
+  .mgrid{grid-template-columns:repeat(2,1fr)!important;gap:10px}
+  .mrail{top:0!important;max-height:none;overflow-y:hidden;overflow-x:auto;padding:8px 0 8px;margin:0 -4px 6px;background:var(--bg)!important;box-shadow:0 6px 14px -8px rgba(0,0,0,.35);z-index:20}
+  html:not([data-glass="off"]) .mrail{background:rgba(245,242,232,.96)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  [data-theme="dark"]:not([data-glass="off"]) .mrail{background:rgba(13,21,18,.96)!important}
+}
 </style>
 </head>
 <body>

@@ -603,15 +603,22 @@ function measureDistance(){
     if(!navigator.geolocation){res({ok:false,reason:'nogeo'});return;}
     var lat=Number(state.settings.GeoLat), lng=Number(state.settings.GeoLng); if(!lat&&!lng){res({ok:false,reason:'noconfig'});return;}
     navigator.geolocation.getCurrentPosition(function(pos){ var d=haversine(pos.coords.latitude,pos.coords.longitude,lat,lng); res({ok:true,distance:Math.round(d),accuracy:Math.round(pos.coords.accuracy||0)}); },
-      function(e){ res({ok:false,reason:e.code===1?'denied':'unavailable'}); },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+      function(e){ res({ok:false,reason:(e&&e.code===1)?'denied':((e&&e.code===3)?'timeout':'unavailable')}); },{enableHighAccuracy:false,timeout:10000,maximumAge:120000});
   });
 }
 function geoGate(){
   var on=state.settings.GeoEnabled===true||state.settings.GeoEnabled==='true';
   /* always try to measure (waiters see the distance); only block when the check is switched on */
-  return measureDistance().then(function(r){
+  if(!on){
+    /* check is off: never make the menu wait for the location prompt. Measure quietly in the background so waiters still see the distance. */
+    state.geo={ok:false,reason:'pending'};
+    setTimeout(function(){ measureDistance().then(function(r){ state.geo=r; }).catch(function(){}); },300);
+    return Promise.resolve(true);
+  }
+  /* check is on: wait for the phone, but never hang - give up after 15 s and explain */
+  var timed=new Promise(function(res){ setTimeout(function(){ res({ok:false,reason:'timeout'}); },15000); });
+  return Promise.race([measureDistance(),timed]).then(function(r){
     state.geo=r;
-    if(!on)return true;
     var radius=Number(state.settings.GeoRadius)||150;
     if(r.ok&&r.distance<=radius+Math.min(r.accuracy||0,50))return true;
     var why=!r.ok&&r.reason==='denied'?t('Please allow location access so we can confirm you are at the restaurant, then reload this page.')

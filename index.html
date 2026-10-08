@@ -394,6 +394,21 @@ html:not([data-glass="off"]) .mcard{background:var(--glass);border:1px solid var
 .mimg{isolation:isolate}
 .mcard{position:relative;z-index:0}
 .wrap{max-width:960px}
+
+.rvw{position:fixed;inset:0;background:rgba(11,20,16,.5);z-index:90;display:flex;align-items:flex-end;justify-content:center}
+.rvw .card{width:100%;max-width:640px;max-height:88vh;display:flex;flex-direction:column;margin:0;border-radius:22px 22px 0 0;padding:14px 16px 16px}
+@media (min-width:700px){.rvw{align-items:center;padding:16px}.rvw .card{border-radius:22px}}
+.rvw h3{margin:0 0 4px;font-size:calc(20px*var(--fs,1))}
+.rvw .rvw-hint{margin:0 0 10px;font-size:calc(14px*var(--fs,1))}
+.rvw-list{overflow:auto;flex:1 1 auto;min-height:60px;-webkit-overflow-scrolling:touch}
+.rvw-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.rvw-row .nm{flex:1;min-width:0;font-weight:700;font-size:calc(17px*var(--fs,1))}
+.rvw-row .nm small{display:block;font-weight:500;color:var(--muted);font-size:calc(13px*var(--fs,1))}
+.rvw-row .amt{min-width:60px;text-align:right;font-weight:800;font-size:calc(16px*var(--fs,1))}
+.rvw-row .rm{border:none;background:none;color:#c0392b;font-size:20px;padding:4px 6px;cursor:pointer}
+.rvw-tot{display:flex;justify-content:space-between;font-weight:800;font-size:calc(19px*var(--fs,1));padding:12px 0 10px}
+.rvw-btns{display:flex;gap:10px}.rvw-btns .btn{flex:1}
+.rvw-empty{padding:20px 0;text-align:center;color:var(--muted)}
 </style>
 
 <style>
@@ -589,6 +604,7 @@ var STR={ml:{'This ordering session has ended':'ഈ ഓർഡറിംഗ് സ
  'Search the menu':'\u0d2e\u0d46\u0d28\u0d41\u0d35\u0d3f\u0d7d \u0d24\u0d3f\u0d30\u0d2f\u0d41\u0d15',
  'No items yet':'\u0d07\u0d24\u0d41\u0d35\u0d30\u0d46 \u0d12\u0d28\u0d4d\u0d28\u0d41\u0d2e\u0d3f\u0d32\u0d4d\u0d32',
  'Send to waiter':'\u0d35\u0d46\u0d2f\u0d3f\u0d31\u0d4d\u0d31\u0d31\u0d3f\u0d28\u0d4d \u0d05\u0d2f\u0d2f\u0d4d\u0d15\u0d4d\u0d15\u0d41\u0d15',
+ 'Review my order':'എന്റെ ഓർഡർ പരിശോധിക്കുക','Add more items':'കൂടുതൽ ചേർക്കുക','Check your items. You can still change them before sending.':'ഇനങ്ങൾ പരിശോധിക്കുക. അയയ്ക്കുന്നതിന് മുമ്പ് മാറ്റാം.','Remove':'നീക്കം ചെയ്യുക','each':'ഒന്നിന്',
  'Sending...':'\u0d05\u0d2f\u0d2f\u0d4d\u0d15\u0d4d\u0d15\u0d41\u0d28\u0d4d\u0d28\u0d41...',
  'Choose your chair first':'\u0d06\u0d26\u0d4d\u0d2f\u0d02 \u0d15\u0d38\u0d47\u0d30 \u0d24\u0d46\u0d30\u0d1e\u0d4d\u0d1e\u0d46\u0d1f\u0d41\u0d15\u0d4d\u0d15\u0d41\u0d15',
  'items':'\u0d07\u0d28\u0d19\u0d4d\u0d19\u0d7e','item':'\u0d07\u0d28\u0d02','chosen':'\u0d24\u0d46\u0d30\u0d1e\u0d4d\u0d1e\u0d46\u0d1f\u0d41\u0d24\u0d4d\u0d24\u0d41',
@@ -739,7 +755,7 @@ function renderPage(){
     +'<div class="search mt"><input id="oSearch" placeholder="'+t('Search the menu')+'" autocomplete="off" oninput="state.menuQuery=norm(this.value);renderMenu()"><button type="button" class="clr" onclick="document.getElementById(\'oSearch\').value=\'\';state.menuQuery=\'\';renderMenu()">&times;</button></div>'
     +'<div id="oMenu" class="mt muted">Loading menu</div></div><div class="spacer"></div>'
     +'<div class="cartbar"><div class="in"><div class="t" style="display:flex;justify-content:space-between;font-weight:800;font-size:18px;margin-bottom:8px"><span id="oCount">'+t('No items yet')+'</span><span id="oSub">'+money(0)+'</span></div>'
-    +'<button class="btn green block" id="oSend" disabled onclick="sendRequest()">'+t('Send to waiter')+'</button></div></div>';
+    +'<button class="btn green block" id="oSend" disabled onclick="openReview()">'+t('Send to waiter')+'</button></div></div>';
   renderMenu(); renderMine();
 }
 function toggleSeat(n){ var i=state.seats.indexOf(n); if(i>=0)state.seats.splice(i,1); else state.seats.push(n); state.seats.sort(function(a,b){return a-b;}); [].forEach.call(document.querySelectorAll('.seat-chip'),function(b,idx){b.classList.toggle('on',state.seats.indexOf(idx+1)>=0);}); updateBar(); }
@@ -854,7 +870,32 @@ function setQtyEl(id,v){ var q=document.getElementById('q_'+id); if(!q)return; i
 
 function cartSet(id,val){ var m=state.menu.filter(function(x){return x.MenuID===id;})[0]; if(!m)return; var v=Math.max(0,Math.round((Number(String(val).replace(',','.'))||0)*100)/100); cartStep(id,v,true); }
 function cartStep(id,d,exact){ var m=state.menu.filter(function(x){return x.MenuID===id;})[0]; if(!m)return; var line=state.cart[id]||{MenuID:id,ItemName:m.ItemName,UnitPrice:m.Price,Quantity:0,Unit:m.Unit||''}; if(exact){ line.Quantity=fmtQty(m,d); } else { if(isKg(m))d=d*0.25; line.Quantity=fmtQty(m,line.Quantity+d); } if(line.Quantity<=0)delete state.cart[id]; else state.cart[id]=line; setQtyEl(id,state.cart[id]?state.cart[id].Quantity:0); updateBar(); if(menuView()==='cards'){cardsAfterStep(id);return;} if(!state.menuQuery)renderMenu(); }
-function updateBar(){ var n=0,sub=0; Object.keys(state.cart).forEach(function(k){n+=(isKg(state.cart[k])?1:state.cart[k].Quantity); sub+=Math.round(state.cart[k].Quantity*state.cart[k].UnitPrice*100)/100;}); $('#oCount').textContent=n?(n+' '+t(n>1?'items':'item')):t('No items yet'); $('#oSub').textContent=money(sub); var b=$('#oSend'); b.disabled=!(n&&state.seats.length)||state.sending; b.textContent=state.sending?t('Sending...'):(!state.seats.length&&n?t('Choose your chair first'):t('Send to waiter')); }
+function updateBar(){ var n=0,sub=0; Object.keys(state.cart).forEach(function(k){n+=(isKg(state.cart[k])?1:state.cart[k].Quantity); sub+=Math.round(state.cart[k].Quantity*state.cart[k].UnitPrice*100)/100;}); $('#oCount').textContent=n?(n+' '+t(n>1?'items':'item')):t('No items yet'); $('#oSub').textContent=money(sub); var b=$('#oSend'); b.disabled=!(n&&state.seats.length)||state.sending; b.textContent=state.sending?t('Sending...'):(!state.seats.length&&n?t('Choose your chair first'):(n?t('Review my order'):t('Send to waiter'))); if($('#rvwList'))renderReview(); }
+/* ---------- review before sending: guests can add or remove items here ---------- */
+function openReview(){
+  if(!Object.keys(state.cart).length){ sendRequest(); return; }
+  var back=document.createElement('div'); back.className='rvw'; back.id='rvwSheet';
+  back.innerHTML='<div class="card"><h3>'+t('Review my order')+'</h3><p class="muted rvw-hint">'+t('Check your items. You can still change them before sending.')+'</p>'
+    +'<div class="rvw-list" id="rvwList"></div><div class="rvw-tot"><span>'+t('Subtotal')+'</span><span id="rvwSub"></span></div>'
+    +'<div class="rvw-btns"><button type="button" class="btn grey" id="rvwMore">'+t('Add more items')+'</button><button type="button" class="btn green" id="rvwSend">'+t('Send to waiter')+'</button></div></div>';
+  $('#modalMount').appendChild(back);
+  back.addEventListener('click',function(e){ if(e.target===back)closeReview(); });
+  $('#rvwMore').onclick=closeReview;
+  $('#rvwSend').onclick=function(){ closeReview(); sendRequest(); };
+  renderReview();
+}
+function closeReview(){ var b=$('#rvwSheet'); if(b)b.remove(); }
+function renderReview(){
+  var box=$('#rvwList'); if(!box)return; var keys=Object.keys(state.cart); var sub=0, h='';
+  keys.forEach(function(k){ var c=state.cart[k]; var m=state.menu.filter(function(x){return x.MenuID===k;})[0]||c; var amt=Math.round(c.UnitPrice*c.Quantity*100)/100; sub+=amt;
+    h+='<div class="rvw-row"><div class="nm">'+esc(typeof itemName==='function'?itemName(m):c.ItemName)+'<small>'+money(c.UnitPrice)+(isKg(c)?'/kg':' '+t('each'))+'</small></div>'
+      +'<div class="stepper"><button type="button" onclick="reviewStep(\''+esc(k)+'\',-1)">&minus;</button><span class="q">'+qtyLabel(c)+'</span><button type="button" onclick="reviewStep(\''+esc(k)+'\',1)">+</button></div>'
+      +'<div class="amt">'+money(amt)+'</div><button type="button" class="rm" title="'+t('Remove')+'" onclick="reviewStep(\''+esc(k)+'\',0,true)">&times;</button></div>'; });
+  box.innerHTML=h||'<div class="rvw-empty">'+t('No items yet')+'</div>';
+  $('#rvwSub').textContent=money(sub); $('#rvwSend').disabled=!keys.length;
+}
+function reviewStep(k,d,remove){ if(remove)cartStep(k,0,true); else cartStep(k,d); renderReview(); }
+
 function sendRequest(){
   if(state.sending)return; var items=Object.keys(state.cart).map(function(k){var l=state.cart[k]; return {MenuID:l.MenuID,ItemName:l.ItemName,Quantity:l.Quantity,UnitPrice:l.UnitPrice,Amount:Math.round(l.Quantity*l.UnitPrice*100)/100,Unit:l.Unit||''};});
   if(!items.length||!state.seats.length)return;

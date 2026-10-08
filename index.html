@@ -417,6 +417,7 @@ html:not([data-glass="off"]) .mcard{background:var(--glass);border:1px solid var
 [data-theme="dark"] .list-item.status.c-amber{background:linear-gradient(180deg,#4a3a12,#3a2d0c)!important;border-color:#8a6a1e!important}
 [data-theme="dark"] .list-item.status.c-green{background:linear-gradient(180deg,#143d26,#0f2e1d)!important;border-color:#2e7a4c!important}
 #refreshBtn.spin svg{animation:spinr 1s linear infinite}@keyframes spinr{to{transform:rotate(360deg)}}#refreshBtn svg{vertical-align:middle}
+body.ro .stepper,body.ro .cartbar,body.ro .mfoot .stepper{display:none!important}body.ro .mcard{pointer-events:none}
 </style>
 
 <style>
@@ -614,6 +615,7 @@ var STR={ml:{'This ordering session has ended':'ഈ ഓർഡറിംഗ് സ
  'Send to waiter':'\u0d35\u0d46\u0d2f\u0d3f\u0d31\u0d4d\u0d31\u0d31\u0d3f\u0d28\u0d4d \u0d05\u0d2f\u0d2f\u0d4d\u0d15\u0d4d\u0d15\u0d41\u0d15',
  'Review my order':'എന്റെ ഓർഡർ പരിശോധിക്കുക','Add more items':'കൂടുതൽ ചേർക്കുക','Check your items. You can still change them before sending.':'ഇനങ്ങൾ പരിശോധിക്കുക. അയയ്ക്കുന്നതിന് മുമ്പ് മാറ്റാം.','Remove':'നീക്കം ചെയ്യുക','each':'ഒന്നിന്',
  'Refreshed':'പുതുക്കി',
+ 'Phone ordering is paused':'ഫോൺ ഓർഡറിംഗ് താൽക്കാലികമായി നിർത്തി','Please tell your waiter what you would like. You can still browse the menu below.':'ദയവായി വെയിറ്ററോട് പറയുക. മെനു താഴെ കാണാം.','Menu':'മെനു',
  'Sending...':'\u0d05\u0d2f\u0d2f\u0d4d\u0d15\u0d4d\u0d15\u0d41\u0d28\u0d4d\u0d28\u0d41...',
  'Choose your chair first':'\u0d06\u0d26\u0d4d\u0d2f\u0d02 \u0d15\u0d38\u0d47\u0d30 \u0d24\u0d46\u0d30\u0d1e\u0d4d\u0d1e\u0d46\u0d1f\u0d41\u0d15\u0d4d\u0d15\u0d41\u0d15',
  'items':'\u0d07\u0d28\u0d19\u0d4d\u0d19\u0d7e','item':'\u0d07\u0d28\u0d02','chosen':'\u0d24\u0d46\u0d30\u0d1e\u0d4d\u0d1e\u0d46\u0d1f\u0d41\u0d24\u0d4d\u0d24\u0d41',
@@ -678,7 +680,8 @@ else {
     if(x[0].exists){ state.settings=x[0].data(); applyTheme(); state.currency=state.settings.Currency||'$'; state.restaurant=state.settings.RestaurantName||'Kerala Kitchen'; $('#rName').textContent=state.restaurant; document.title='Order - '+state.restaurant; }
     if(!x[1].exists||x[1].data().Active===false){ $('#main').innerHTML='<div class="card"><h2>Table not found</h2><p class="muted">This QR code is not linked to an active table. Please ask a staff member.</p></div>'; return; }
     state.table=x[1].data(); loadMine();
-    geoGate().then(function(ok){ if(!ok)return false; return sittingCheck(); }).then(function(go){ if(go===false)return; startMenu(); renderPage(); watchMine(); })
+    if(qrPaused()){ renderPaused(); watchPause(); return; }
+    geoGate().then(function(ok){ if(!ok)return false; return sittingCheck(); }).then(function(go){ if(go===false)return; startMenu(); renderPage(); watchMine(); watchPause(); })
       .catch(function(e){ $('#main').innerHTML='<div class="card"><h2>Cannot connect</h2><p class="muted">'+esc(e.message)+'</p></div>'; });
   }).catch(function(e){ $('#main').innerHTML='<div class="card"><h2>Cannot connect</h2><p class="muted">'+esc(e.message)+'</p></div>'; });
 }
@@ -935,6 +938,14 @@ function hardRefresh(){
   try{ watchMine(); }catch(e){}
   toast('success',t('Refreshed'),1800);
 }
+/* admin can pause phone ordering (setting QrOrdering = no): the page then shows the menu to read only */
+function qrPaused(){ var v=state.settings&&state.settings.QrOrdering; return v===false||String(v||'yes').toLowerCase()==='no'||String(v).toLowerCase()==='false'; }
+function renderPaused(){
+  $('#main').innerHTML='<div class="card" style="text-align:center"><div style="font-size:48px">&#128222;</div><h2>'+t('Phone ordering is paused')+'</h2><p class="muted">'+t('Please tell your waiter what you would like. You can still browse the menu below.')+'</p></div><div class="card"><h2>'+t('Menu')+'</h2><div id="oMenu" class="mt muted">Loading menu</div></div>';
+  state.readOnly=true; document.body.classList.add('ro'); startMenu();
+}
+var pauseUnsub=null;
+function watchPause(){ if(pauseUnsub)return; pauseUnsub=db.collection('settings').doc('main').onSnapshot(function(s){ if(!s.exists)return; var was=qrPaused(); state.settings=s.data(); if(qrPaused()!==was)location.reload(); }); }
 function renderMine(){
   var box=$('#mine'); if(!box)return; var ids=state.myReqs.slice().reverse(); if(!ids.length){box.innerHTML='';return;}
   box.innerHTML=ids.map(function(id){ var r=reqData[id]; if(!r)return '';
